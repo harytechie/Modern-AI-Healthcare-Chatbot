@@ -7,12 +7,7 @@ import random
 import datetime
 from collections import defaultdict
 import re
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-
-nltk.download('punkt')
-nltk.download('stopwords')
+import difflib
 
 app = Flask(__name__)
 CORS(app)
@@ -68,19 +63,42 @@ def is_greeting(message):
     return any(greeting in message.lower() for greeting in greetings)
 
 def preprocess_text(text):
-    # Tokenize and remove stopwords
-    stop_words = set(stopwords.words('english'))
-    tokens = word_tokenize(text.lower())
-    return [token for token in tokens if token not in stop_words]
+    # Lightweight tokenizer and stopword removal to avoid external NLTK dependency
+    text = text.lower()
+    tokens = re.findall(r"\b[a-z0-9]+\b", text)
+    stop_words = {
+        'i','me','my','myself','we','our','ours','ourselves','you','your','yours','yourself','yourselves',
+        'he','him','his','himself','she','her','hers','herself','it','its','itself','they','them','their',
+        'theirs','themselves','what','which','who','whom','this','that','these','those','am','is','are',
+        'was','were','be','been','being','have','has','had','having','do','does','did','doing','a','an','the',
+        'and','but','if','or','because','as','until','while','of','at','by','for','with','about','against',
+        'between','into','through','during','before','after','above','below','to','from','up','down','in','out',
+        'on','off','over','under','again','further','then','once','here','there','when','where','why','how','all',
+        'any','both','each','few','more','most','other','some','such','no','nor','not','only','own','same','so',
+        'than','too','very','s','t','can','will','just','don','should','now'
+    }
+    return [t for t in tokens if t not in stop_words]
 
 def match_symptoms(user_input):
     preprocessed_input = preprocess_text(user_input)
     matched_symptoms = []
-    
+
+    # Use token overlap and fuzzy matching to handle typos (e.g., "feevr" -> "fever")
     for symptom in symptoms_conditions_dict.keys():
-        if any(token in preprocess_text(symptom) for token in preprocessed_input):
+        symptom_tokens = preprocess_text(symptom)
+        found = False
+        for token in preprocessed_input:
+            if token in symptom_tokens:
+                found = True
+                break
+            # fuzzy match token to symptom tokens
+            close = difflib.get_close_matches(token, symptom_tokens, n=1, cutoff=0.75)
+            if close:
+                found = True
+                break
+        if found:
             matched_symptoms.append(symptom)
-    
+
     return matched_symptoms
 
 @app.route('/')

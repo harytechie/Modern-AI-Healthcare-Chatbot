@@ -1,48 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d9488">
     <title>HealthCare Chatbot</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
+
 <body>
-    <div class="sidebar">
-        <h2>HealthCare Chatbot</h2>
-        <div class="sidebar-content">
-            <p>Welcome to our AI-powered healthcare assistant. Feel free to ask any health-related questions or describe your symptoms.</p>
-        </div>
-        <div class="health-tips">
-            <h3>Quick Health Tips</h3>
-            <ul>
-                <li>Stay hydrated</li>
-                <li>Get enough sleep</li>
-                <li>Exercise regularly</li>
-                <li>Eat a balanced diet</li>
-            </ul>
-        </div>
-    </div>
-    <div class="chat-container">
-        <div class="chat-header">
-            Chat with HealthCare Bot
-        </div>
-        <div class="chat-messages" id="chatMessages">
-            <div class="message bot-message">
-                Hello! I'm your healthcare assistant. How can I help you today?
+    <!-- Pure CSS sidebar toggle (no JS) -->
+    <input type="checkbox" id="sidebarToggle" aria-hidden="true">
+
+    <div class="app-wrapper">
+        <!-- Backdrop overlay — tapping closes the sidebar -->
+        <label for="sidebarToggle" class="sidebar-backdrop" aria-hidden="true"></label>
+
+        <div class="sidebar">
+            <!-- Close button (mobile only) -->
+            <label for="sidebarToggle" class="sidebar-close" aria-label="Close sidebar">✕</label>
+            <h2>HealthCare Chatbot</h2>
+            <div class="sidebar-content">
+                <p>Welcome to our AI-powered healthcare assistant. Feel free to ask any health-related questions or
+                    describe your symptoms.</p>
+            </div>
+            <div class="health-tips">
+                <h3>Quick Health Tips</h3>
+                <ul>
+                    <li>Stay hydrated</li>
+                    <li>Get enough sleep</li>
+                    <li>Exercise regularly</li>
+                    <li>Eat a balanced diet</li>
+                </ul>
             </div>
         </div>
-        <div class="chat-input">
-            <input type="text" id="userInput" placeholder="Type your message here...">
-            <button id="sendButton">Send</button>
+        <div class="chat-container">
+            <div class="chat-header">
+                <label for="sidebarToggle" class="hamburger-btn" aria-label="Toggle sidebar">☰</label>
+                <span class="header-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2L12 22M2 12L22 12M7 7L17 17M17 7L7 17" opacity="0.5" />
+                        <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20z" />
+                        <path d="M12 8v4M12 16h.01" />
+                    </svg>
+                </span>
+                <span class="header-title">Chat with HealthCare Bot</span>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    Hello! I'm your healthcare assistant. How can I help you today?
+                </div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="userInput" placeholder="Type your message here..."
+                    aria-label="Type your message">
+                <button id="sendButton" aria-label="Send message">Send</button>
+            </div>
         </div>
     </div>
 
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             let sessionId = Date.now().toString();
-    
+
             function addMessage(message, isUser) {
                 const messageDiv = $('<div>').addClass('message').text(message);
                 if (isUser) {
@@ -53,57 +76,57 @@
                 $('#chatMessages').append(messageDiv);
                 $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
             }
-    
+
             function sendMessage(message) {
                 $.ajax({
                     url: '/chatbot',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({ message: message, session_id: sessionId }),
-                    success: function(response) {
+                    success: function (response) {
                         addMessage(response.response, false);
-    
+
                         if (response.response.includes("Are you currently at Ganpat University campus?")) {
                             addMessage("If yes, would you like to book an appointment at the Guni Health Clinic? (Yes/No)", false);
                         }
                     },
-                    error: function(xhr, status, error) {
+                    error: function (xhr, status, error) {
                         addMessage("Error: " + error, false);
                     }
                 });
             }
-    
+
             function bookAppointment(time) {
                 $.ajax({
                     url: '/book_appointment',
                     type: 'POST',
                     contentType: 'application/json',
-                    data: JSON.stringify({ 
+                    data: JSON.stringify({
                         session_id: sessionId,
                         preferred_time: time
                     }),
-                    success: function(response) {
+                    success: function (response) {
                         addMessage(response.response, false);
                         if (response.response.includes("Would you like to book this slot?")) {
                             addMessage("Please respond with 'Yes' to confirm the suggested slot, or provide another time.", false);
                         }
                     },
-                    error: function(xhr, status, error) {
+                    error: function (xhr, status, error) {
                         addMessage("Error booking appointment: " + error, false);
                     }
                 });
             }
-    
+
             // Initial message
             addMessage("Hello! I'm your healthcare assistant. What should I call you?", false);
-    
-            $('#sendButton').click(function() {
+
+            $('#sendButton').click(function () {
                 const userInput = $('#userInput').val().trim();
                 if (userInput === '') return;
-    
+
                 addMessage(userInput, true);
                 $('#userInput').val('');
-    
+
                 if (userInput.toLowerCase() === 'yes' && $('#chatMessages').text().includes("would you like to book an appointment")) {
                     addMessage("Great! Please provide a preferred time for your appointment (HH:MM):", false);
                 } else if (userInput.match(/^\d{2}:\d{2}$/)) {
@@ -112,8 +135,8 @@
                     sendMessage(userInput);
                 }
             });
-    
-            $('#userInput').keypress(function(e) {
+
+            $('#userInput').keypress(function (e) {
                 if (e.which == 13) {
                     $('#sendButton').click();
                 }
@@ -121,4 +144,5 @@
         });
     </script>
 </body>
+
 </html>
