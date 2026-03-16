@@ -46,14 +46,14 @@ python -m nltk.downloader punkt stopwords
 
 1. Start the Flask server:
 ```bash
-python chatbot.py
+python app.py
 ```
 2. Open a web browser and navigate to `http://localhost:5000`
 
 3. Interact with the chatbot by typing your symptoms or health concerns
 
 ## Project Structure
-- `chatbot.py`: Main application file
+- `app.py`: Main application file
 - `templates/index.html`: HTML template for the web interface
 - `static/styles.css`: CSS styles for the web interface
 - `data/`: Directory containing CSV files with medical data
